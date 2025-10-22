@@ -1,0 +1,122 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  admin
+  client
+  technical
+}
+
+enum TicketStatus {
+  open
+  closed
+  onProgress
+}
+
+model User {
+  id       String @id @default(uuid())
+  name     String
+  email    String
+  password String
+
+  role UserRole @default(client)
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime? @updatedAt @map("updated_at")
+
+  availableHour   AvailableHour[]
+  clientTicket    Ticket[]        @relation("ClientUser")
+  technicalTicket Ticket[]        @relation("TechnicalUser")
+  TicketHistory   TicketHistory[]
+
+  @@map("users")
+}
+
+model AvailableHour {
+  id String @id @default(uuid())
+
+  technicalId String @map("technical_id")
+  user        User   @relation(fields: [technicalId], references: [id])
+
+  hour String
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime? @updatedAt @map("updated_at")
+
+  @@map("available_hours")
+}
+
+model Service {
+  id       String  @id @default(uuid())
+  title    String
+  cost     Decimal
+  isActive Boolean @default(true)
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime? @updatedAt @map("updated_at")
+
+  TicketServices TicketService[]
+
+  @@map("services")
+}
+
+model Ticket {
+  id          String @id @default(uuid())
+  title       String
+  service     String
+  description String
+
+  clientId String @map("client_id")
+  client   User   @relation("ClientUser", fields: [clientId], references: [id])
+
+  technicalId String @map("technical_id")
+  technical   User   @relation("TechnicalUser", fields: [technicalId], references: [id])
+
+  status TicketStatus @default(open)
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime? @updatedAt @map("updated_at")
+
+  TicketServices TicketService[]
+  TicketHistory  TicketHistory[]
+
+  @@map("tickets")
+}
+
+model TicketService {
+  id String @id @default(uuid())
+
+  ticketId String @map("ticket_id")
+  tickets  Ticket @relation(fields: [ticketId], references: [id])
+
+  serviceId String  @map("service_id")
+  services  Service @relation(fields: [serviceId], references: [id])
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime? @updatedAt @map("updated_at")
+
+  @@map("ticket_services")
+}
+
+model TicketHistory {
+  id String @id @default(uuid())
+
+  ticketId String @map("ticket_id")
+  ticket   Ticket @relation(fields: [ticketId], references: [id])
+
+  changedBy String @map("changed_by")
+  user      User   @relation(fields: [changedBy], references: [id])
+
+  oldStatus TicketStatus
+  newStatus TicketStatus
+
+  changedAt DateTime @default(now()) @map("changed_at")
+
+  @@map("ticket_history")
+}

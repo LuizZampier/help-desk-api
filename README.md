@@ -1,15 +1,1 @@
-database
-  users - name, email, password, role, img
-    availableHour - techId, hour
-
-  ticket - title, services, description, value, client, technical, status, createdAt, updatedAt
-
-  services - name, value, status
-
-client
-
-admin
-  serv
-
-technical
-
+Caso deseje utilizar a aplicação em sua máquina, garanta que o docker esteja intalado, para então executar o comando: docker-compose up -d
