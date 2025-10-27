@@ -25,7 +25,7 @@ export class UploadController {
         )
       }).passthrough()
 
-      const file = fileSchema.parse(req.body)
+      const file = fileSchema.parse(req.file)
       const filename = await diskStorage.saveFile(file.filename)
 
       res.json({filename})

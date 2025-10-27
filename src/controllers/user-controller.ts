@@ -38,7 +38,54 @@ export class UserController {
   }
 
   async update(req: Request, res: Response) {
-    
-    return res.json({message: "Work it!"})
+    const bodySchema = z.object({
+      name: z.string().trim().min(3, "Insira um nome válido"),
+      email: z.string().email(),
+      password: z.string().min(6, "A senha deve conter no mínimo 6 caracteres"),
+      filename: z.string().min(20).optional()
+    })
+
+    const { name, email, password, filename } = bodySchema.parse(req.body)
+
+    const userParams = req.params.id
+    const loggedUser = req.user?.id
+    const loggedUserRole = req.user?.role
+
+    if(userParams !== loggedUser && loggedUserRole !== "admin") {
+      throw new AppError("cannot modify other user")
+    }
+
+    const userWithSameEmail = await prisma.user.findFirst(
+      {
+        where: {
+          email,
+          NOT: {
+            id: loggedUser
+          }
+        }
+      }
+    )
+
+    if(userWithSameEmail) {
+      throw new AppError("user with same email already exists")
+    }
+
+    const hashedPassword = await hash(password, 8)
+
+    const updatedUser = await prisma.user.update({
+      data: {
+        name, 
+        email,
+        password: hashedPassword,
+        image: filename
+      },
+      where: {
+        id: userParams
+      }
+    })
+
+    const { password:_, ...userUpdatedWithoutPassword } = updatedUser
+
+    return res.json(userUpdatedWithoutPassword)
   }
 }
