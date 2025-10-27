@@ -36,4 +36,9 @@ export class UserController {
 
     return res.status(201).json(userWithoutPassword)
   }
+
+  async update(req: Request, res: Response) {
+    
+    return res.json({message: "Work it!"})
+  }
 }
