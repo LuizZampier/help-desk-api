@@ -7,8 +7,27 @@ const userRoutes = Router()
 const userController = new UserController()
 
 userRoutes.post("/", userController.create)
-userRoutes.patch("/:id", 
+userRoutes.patch(
+  "/:id", 
   ensureAuthenticated,
-  userController.update)
+  userController.update
+)
+userRoutes.get(
+  "/",
+  ensureAuthenticated,
+  verifyUserAuthenticated(["admin"]),
+  userController.index
+)
+userRoutes.get(
+  "/:id",
+  ensureAuthenticated,
+  verifyUserAuthenticated(["admin"]),
+  userController.show
+)
+userRoutes.delete(
+  "/:id",
+  ensureAuthenticated,
+  userController.remove
+)
 
 export { userRoutes}

@@ -86,6 +86,55 @@ export class UserController {
 
     const { password:_, ...userUpdatedWithoutPassword } = updatedUser
 
-    return res.json(userUpdatedWithoutPassword)
+    return res.status(200).json(userUpdatedWithoutPassword)
+  }
+
+  async index(req: Request, res: Response) {
+    const users = await prisma.user.findMany({
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        image: true
+      }
+    })
+
+    return res.json(users)
+  }
+
+  async show(req: Request, res: Response) {
+    const { id } = req.params
+
+    const user = await prisma.user.findFirst({
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        image: true
+      },
+      where: { id }
+    })
+
+    return res.json(user)
+  }
+
+  async remove(req: Request, res: Response) {
+    const paramsId = req.params.id
+    const loggedUser = req.user?.id
+    const loggedUserRole = req.user?.role
+
+    const userExists = await prisma.user.findFirst({ where: { id: paramsId } })
+
+    if(!userExists) {
+      throw new AppError("user not exist", 404)
+    }
+
+    if(paramsId !== loggedUser && loggedUserRole !== "admin") {
+      throw new AppError("cannot remove other user")
+    }
+
+    const removedUser = await prisma.user.delete({ where: { id: paramsId } })
+
+    return res.status(200).json(removedUser)
   }
 }
