@@ -10,5 +10,10 @@ availableHourRoutes.post(
   verifyUserAuthenticated(["admin","technical"]),
   availableHourController.create
 )
+availableHourRoutes.delete(
+  "/:technicalId",
+  verifyUserAuthenticated(["admin", "technical"]),
+  availableHourController.remove
+)
 
 export { availableHourRoutes }
