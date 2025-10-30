@@ -70,6 +70,8 @@ model Service {
 
 model Ticket {
   id          String @id @default(uuid())
+  ticketNumber Int @default(autoincrement()) @unique
+
   title       String
   service     String
   description String
