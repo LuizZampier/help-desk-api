@@ -7,6 +7,7 @@ import { ensureAuthenticated } from "../middlewares/ensureAuthenticated"
 import { uploadRoutes } from "./uploads-routes"
 import { availableHourRoutes } from "./available-hours-routes"
 import { ticketsRoutes } from "./tickets-routes"
+import { ticketServiceRoutes } from "./ticket-services-routes"
 
 const routes = Router()
 
@@ -20,5 +21,6 @@ routes.use("/services", serviceRoutes)
 routes.use("/uploads", uploadRoutes)
 routes.use("/available-hour", availableHourRoutes)
 routes.use("/tickets", ticketsRoutes)
+routes.use("/ticket-services", ticketServiceRoutes)
 
 export { routes }

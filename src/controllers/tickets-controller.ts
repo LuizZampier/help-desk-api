@@ -59,4 +59,51 @@ export class TicketsController {
 
     return res.json()
   }
+
+  async updateStatus(req: Request, res: Response) {
+    const bodySchema = z.object({
+      status: z.enum(["open", "closed", "onProgress"])
+    })
+
+    const { status } = bodySchema.parse(req.body)
+
+    const id = req.params.id
+
+    const ticketExists = await prisma.ticket.findFirst({ where: { id } })
+
+
+    if(!ticketExists) {
+      throw new AppError("ticket not exist")
+    }
+
+    if(ticketExists.status === status) {
+      throw new AppError("new status is same as the older")
+    }
+
+    const updateStatus = await prisma.ticket.update({
+      data: {
+        status: status
+      },
+      where: { id }
+    })
+
+    if(!req.user?.id) {
+      throw new AppError("user not authenticated", 401)
+    }
+
+    const ticketHistory = await prisma.ticketHistory.create({
+      data: {
+        ticketId: updateStatus.id,
+        changedBy: req.user.id,
+        oldStatus: ticketExists.status,
+        newStatus: status
+      }
+    })
+
+    return res.json(updateStatus)
+  }
+
+  async index(req: Request, res: Response) {
+    return res.json()
+  }
 }
