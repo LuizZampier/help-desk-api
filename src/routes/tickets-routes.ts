@@ -22,4 +22,9 @@ ticketsRoutes.get(
   ticketsController.index
 )
 
+ticketsRoutes.get(
+  "/:id",
+  ticketsController.show
+)
+
 export { ticketsRoutes }

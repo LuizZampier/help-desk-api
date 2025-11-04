@@ -104,6 +104,156 @@ export class TicketsController {
   }
 
   async index(req: Request, res: Response) {
-    return res.json()
+    const loggedUser = req.user
+
+    let tickets
+
+    if(!loggedUser) {
+      throw new AppError("invalid user")
+    }
+
+    if (loggedUser.role === "client") {
+      tickets = await prisma.$queryRaw`
+        SELECT
+          t.id,
+          t."ticketNumber",
+          t.title AS "ticketTitle",
+          t.description,
+          t.status,
+          t.client_id,
+          uc.name AS "clientName",
+          t.technical_id,
+          ut.name AS "technicalName",
+          t.created_at,
+          t.updated_at,
+          t.service,
+          COALESCE(SUM(s.cost), 0) AS "totalCost"
+        FROM tickets t
+        INNER JOIN ticket_services ts 
+          ON ts.ticket_id = t.id
+        INNER JOIN services s 
+          ON s.id = ts.service_id
+        INNER JOIN users uc
+          ON uc.id = t.client_id
+        INNER JOIN users ut
+          ON ut.id = t.technical_id
+        WHERE t.client_id = ${loggedUser.id}
+        GROUP BY t.id, uc.name, ut.name
+        ORDER BY t.created_at DESC
+      `
+    } else if (loggedUser.role === "technical") {
+      tickets = await prisma.$queryRaw`
+        SELECT
+          t.id,
+          t."ticketNumber",
+          t.title AS "ticketTitle",
+          t.description,
+          t.status,
+          t.client_id,
+          uc.name AS "clientName",
+          t.technical_id,
+          ut.name AS "technicalName",
+          t.created_at,
+          t.updated_at,
+          t.service,
+          COALESCE(SUM(s.cost), 0) AS "totalCost"
+        FROM tickets t
+        INNER JOIN ticket_services ts 
+          ON ts.ticket_id = t.id
+        INNER JOIN services s 
+          ON s.id = ts.service_id
+        INNER JOIN users uc
+          ON uc.id = t.client_id
+        INNER JOIN users ut
+          ON ut.id = t.technical_id
+        WHERE t.technical_id = ${loggedUser.id}
+        GROUP BY t.id, uc.name, ut.name
+        ORDER BY t.created_at DESC
+      `
+    } else if (loggedUser.role === "admin") {
+      tickets = await prisma.$queryRaw`
+        SELECT
+          t.id,
+          t."ticketNumber",
+          t.title AS "ticketTitle",
+          t.description,
+          t.status,
+          t.client_id,
+          uc.name AS "clientName",
+          t.technical_id,
+          ut.name AS "technicalName",
+          t.created_at,
+          t.updated_at,
+          t.service,
+          COALESCE(SUM(s.cost), 0) AS "totalCost"
+        FROM tickets t
+        INNER JOIN ticket_services ts 
+          ON ts.ticket_id = t.id
+        INNER JOIN services s 
+          ON s.id = ts.service_id
+        INNER JOIN users uc
+          ON uc.id = t.client_id
+        INNER JOIN users ut
+          ON ut.id = t.technical_id
+        GROUP BY t.id, uc.name, ut.name
+        ORDER BY t.created_at DESC
+      `
+    }
+
+    return res.json(tickets)
+  }
+
+  async show(req: Request, res: Response) {
+    const id = req.params.id
+    const loggedUser = req.user
+
+    const ticketExists = await prisma.ticket.findFirst({ where: {id} })
+
+    if(!ticketExists) {
+      throw new AppError("ticket not exists")
+    }
+
+    let verifyTicket
+
+    if(loggedUser?.role === "client") {
+      verifyTicket = await prisma.ticket.findFirst({ where: {clientId: loggedUser.id} })
+    } else if (loggedUser?.role === "technical") {
+      verifyTicket = await prisma.ticket.findFirst({ where: {technicalId: loggedUser.id} })
+    }
+
+    if(!verifyTicket && loggedUser?.role !== "admin") {
+      throw new AppError("your user not attributed to this ticket")
+    }
+
+    const ticket = await prisma.$queryRaw`
+      SELECT
+        t.id,
+        t."ticketNumber",
+        t.title AS "ticketTitle",
+        t.service,
+        s.title AS "servicesAdded",
+        SUM(s.cost) as "cost",
+        t.description,
+        t.status,
+        t.client_id,
+        uc.name AS "clientName",
+        t.technical_id,
+        ut.name AS "technicalName",
+        t.created_at,
+        t.updated_at
+      FROM tickets t
+      INNER JOIN ticket_services ts 
+        ON ts.ticket_id = t.id
+      INNER JOIN services s
+        ON s.id = ts.service_id
+      INNER JOIN users uc
+        ON uc.id = t.client_id
+      INNER JOIN users ut
+        ON ut.id = t.technical_id
+      WHERE t.id = ${id}
+      GROUP BY t.id, s.title, uc.name, ut.name
+    `
+
+    return res.json(ticket)
   }
 }
