@@ -3,6 +3,8 @@ import { z } from "zod"
 import { hash } from "bcrypt"
 
 import { prisma } from "../database/prisma"
+import { Shift } from "@prisma/client"
+import { SHIFT_HOURS } from "../utils/hoursAvailable"
 import { AppError } from "../utils/AppError"
 
 export class UserController {
@@ -11,20 +13,22 @@ export class UserController {
         name: z.string().trim().min(3, {message: "Insira um nome"}),
         email: z.string().email(),
         password: z.string().min(6, {message: "A sua senha deve conter no mínimo 6 caracteres"}),
-        role: z.enum(["client", "technical", "admin"]).default("client").optional(),
-        shift: z.enum(["ONE", "TWO", "THREE"]).optional()
+        role: z.enum(["client", "technical", "admin"]).default("client").optional()
       })
 
-      const { name, email, password, role, shift } = bodySchema.parse(req.body)
+      const { name, email, password, role } = bodySchema.parse(req.body)
 
+      
       const userWithSameEmail = await prisma.user.findFirst({where: {email}})
-
+      
       if(userWithSameEmail) {
         throw new AppError("User with same email already exists")
       }
+      
+      let shiftDefault = null
 
-      if(role === "technical" && shift?.length === 0) {
-        throw new AppError("technical user must have a shift (1, 2 or 3)")
+      if(role === "technical") {
+        shiftDefault = "ONE"
       }
 
       const hashedPassword = await hash(password, 8)
@@ -35,9 +39,18 @@ export class UserController {
           email,
           password: hashedPassword,
           role,
-          shift
+          shift: shiftDefault as Shift | null
         }
       })
+
+      if(role === "technical") {
+        await prisma.availableHour.createMany({
+          data: SHIFT_HOURS["ONE"].map((h) => ({
+            technicalId: user.id,
+            hour: h
+          }))
+        })
+      }
 
       const { password:_, ...userWithoutPassword } = user
 
@@ -46,9 +59,9 @@ export class UserController {
 
   async update(req: Request, res: Response) {
     const bodySchema = z.object({
-      name: z.string().trim().min(3, "Insira um nome válido"),
-      email: z.string().email(),
-      password: z.string().min(6, "A senha deve conter no mínimo 6 caracteres"),
+      name: z.string().trim().min(3, "Insira um nome válido").optional(),
+      email: z.string().email().optional(),
+      password: z.string().min(6, "A senha deve conter no mínimo 6 caracteres").optional(),
       shift: z.enum(["ONE", "TWO", "THREE"]).optional(),
       filename: z.string().min(20).optional()
     })
@@ -63,22 +76,57 @@ export class UserController {
       throw new AppError("cannot modify other user")
     }
 
-    const userWithSameEmail = await prisma.user.findFirst(
-      {
-        where: {
-          email,
-          NOT: {
-            id: loggedUser
-          }
-        }
-      }
-    )
+    const userExist = await prisma.user.findFirst({where:{id: userParams}})
 
-    if(userWithSameEmail) {
-      throw new AppError("user with same email already exists")
+    if(!userExist) {
+      throw new AppError("user not exist")
     }
 
-    const hashedPassword = await hash(password, 8)
+    if(email) {
+      const userWithSameEmail = await prisma.user.findFirst(
+        {
+          where: {
+            email,
+            NOT: {
+              id: loggedUser
+            }
+          }
+        }
+      )
+
+      if(userWithSameEmail) {
+        throw new AppError("user with same email already exists")
+      }
+    }
+
+    let hashedPassword 
+
+    if(password) {
+      hashedPassword = await hash(password, 8)
+    } else {
+      hashedPassword = userExist.password
+    }
+
+    if(shift && shift !== userExist.shift && userExist.shift && userExist.role === "technical") {
+      const hoursAvailableUpdate = SHIFT_HOURS[userExist.shift]
+
+      await prisma.availableHour.deleteMany(
+        {
+          where: {
+            technicalId: userParams,
+            hour: { in: hoursAvailableUpdate }
+          }
+        }
+      )
+
+      await prisma.availableHour.createMany({
+        data: SHIFT_HOURS[shift].map((h) => ({
+          technicalId: userParams,
+          hour: h
+        }))
+      })
+    }
+
 
     const updatedUser = await prisma.user.update({
       data: {

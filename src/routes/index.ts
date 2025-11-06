@@ -8,6 +8,7 @@ import { uploadRoutes } from "./uploads-routes"
 import { availableHourRoutes } from "./available-hours-routes"
 import { ticketsRoutes } from "./tickets-routes"
 import { ticketServiceRoutes } from "./ticket-services-routes"
+import { ticketHistoryRoutes } from "./ticket-history-routes"
 
 const routes = Router()
 
@@ -22,6 +23,6 @@ routes.use("/uploads", uploadRoutes)
 routes.use("/available-hour", availableHourRoutes)
 routes.use("/tickets", ticketsRoutes)
 routes.use("/ticket-services", ticketServiceRoutes)
-routes.use("/ticket-history")
+routes.use("/ticket-history", ticketHistoryRoutes)
 
 export { routes }
