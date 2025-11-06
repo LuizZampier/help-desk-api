@@ -1,7 +1,7 @@
 import { Request, Response } from "express"
 import { z } from "zod"
 
-import { AVAILABLE_HOURS } from "../utils/hoursAvailable"
+import { AVAILABLE_HOURS, SHIFT_HOURS } from "../utils/hoursAvailable"
 import { AppError } from "../utils/AppError"
 import { prisma } from "../database/prisma"
 
@@ -30,15 +30,26 @@ export class AvailableHourController {
       throw new AppError("user is not a technical")
     }
 
+    if(!userExist.shift) {
+      throw new AppError("technical shift not defined")
+    }
 
-    const availableHour = await prisma.availableHour.createMany({
+    const allowedHours = SHIFT_HOURS[userExist.shift]
+
+    const hoursApproved = hours.map((h) => allowedHours.includes(h))
+
+    if(hoursApproved.includes(false)) {
+      throw new AppError(`only your shift times are accepted: ${allowedHours}`)
+    }
+
+    await prisma.availableHour.createMany({
       data: hours.map((h) => ({
         technicalId,
         hour: h
       }))
     })
 
-    return res.status(201).json(availableHour)
+    return res.status(201).json()
   }
 
   async remove(req: Request, res: Response) {
@@ -70,7 +81,7 @@ export class AvailableHourController {
 
     const hoursToDelete = existingHours.map((h) => h.hour)
 
-    const deleteTechnicalHours = await prisma.availableHour.deleteMany(
+    await prisma.availableHour.deleteMany(
       {
         where: {
           technicalId,

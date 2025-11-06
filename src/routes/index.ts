@@ -22,5 +22,6 @@ routes.use("/uploads", uploadRoutes)
 routes.use("/available-hour", availableHourRoutes)
 routes.use("/tickets", ticketsRoutes)
 routes.use("/ticket-services", ticketServiceRoutes)
+routes.use("/ticket-history")
 
 export { routes }

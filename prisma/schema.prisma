@@ -19,11 +19,18 @@ enum TicketStatus {
   onProgress
 }
 
+enum Shift {
+  ONE   
+  TWO   
+  THREE 
+}
+
 model User {
   id       String @id @default(uuid())
   name     String
   email    String
   password String
+  shift    Shift?
   image    String?
 
   role UserRole @default(client)
