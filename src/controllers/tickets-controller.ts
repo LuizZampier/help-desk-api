@@ -27,6 +27,10 @@ export class TicketsController {
       throw new AppError("service don't exists")
     }
 
+    if(serviceExists.isActive === false) {
+      throw new AppError("this service is not active in the moment")
+    }
+
     if(!req.user?.id) {
       throw new AppError("user not authenticated", 401)
     }

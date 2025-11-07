@@ -13,7 +13,7 @@ ticketsRoutes.post(
 
 ticketsRoutes.patch(
   "/:id",
-  verifyUserAuthenticated(["technical"]),
+  verifyUserAuthenticated(["technical", "admin"]),
   ticketsController.updateStatus
 )
 
