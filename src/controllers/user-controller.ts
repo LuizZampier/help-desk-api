@@ -3,7 +3,7 @@ import { z } from "zod"
 import { hash } from "bcrypt"
 
 import { prisma } from "../database/prisma"
-import { Shift } from "@prisma/client"
+import { Shift, UserRole } from "@prisma/client"
 import { SHIFT_HOURS } from "../utils/hoursAvailable"
 import { AppError } from "../utils/AppError"
 
@@ -147,6 +147,12 @@ export class UserController {
   }
 
   async index(req: Request, res: Response) {
+    const roleParams = req.params.role as UserRole
+
+    if(!roleParams) {
+      throw new AppError("invalid role")
+    } 
+
     const users = await prisma.user.findMany({
       select: {
         id: true,
@@ -154,6 +160,9 @@ export class UserController {
         email: true,
         role: true,
         image: true
+      },
+      where: {
+        role: roleParams
       }
     })
 

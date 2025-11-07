@@ -13,7 +13,7 @@ userRoutes.patch(
   userController.update
 )
 userRoutes.get(
-  "/",
+  "/:role",
   ensureAuthenticated,
   verifyUserAuthenticated(["admin"]),
   userController.index
