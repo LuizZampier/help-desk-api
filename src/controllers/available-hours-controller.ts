@@ -92,4 +92,34 @@ export class AvailableHourController {
 
     return res.status(200).json()
   }
+
+  async show(req: Request, res: Response) {
+    const paramsId = req.params.id
+
+    const userExist = await prisma.user.findFirst({
+      where: {
+        id: paramsId,
+        role: "technical"
+      }
+    })
+
+    if(!userExist) {
+      throw new AppError("user don't exist or is not a technical")
+    }
+
+    const availableHours = await prisma.$queryRaw`
+      SELECT 
+        u.id,
+        u.name,
+        u.email,
+        u.shift,
+        ah.hour
+      FROM available_hours ah
+      INNER JOIN users u
+        ON ah.technical_id = u.id
+      WHERE u.id = ${paramsId}
+    `
+
+    return res.json(availableHours)
+  }
 }

@@ -15,5 +15,10 @@ availableHourRoutes.delete(
   verifyUserAuthenticated(["admin", "technical"]),
   availableHourController.remove
 )
+availableHourRoutes.get(
+  "/:id",
+  verifyUserAuthenticated(["technical", "admin"]),
+  availableHourController.show
+)
 
 export { availableHourRoutes }

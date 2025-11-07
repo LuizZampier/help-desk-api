@@ -147,9 +147,13 @@ export class UserController {
   }
 
   async index(req: Request, res: Response) {
-    const roleParams = req.params.role as UserRole
+    const bodySchema = z.object({
+      role: z.enum(["client", "technical", "admin"])
+    })
 
-    if(!roleParams) {
+    const { role } = bodySchema.parse(req.body)
+
+    if(!role) {
       throw new AppError("invalid role")
     } 
 
@@ -162,7 +166,7 @@ export class UserController {
         image: true
       },
       where: {
-        role: roleParams
+        role: role
       }
     })
 
@@ -181,6 +185,10 @@ export class UserController {
       },
       where: { id }
     })
+
+    if(!user) {
+      throw new AppError("user don't exist")
+    }
 
     return res.json(user)
   }
