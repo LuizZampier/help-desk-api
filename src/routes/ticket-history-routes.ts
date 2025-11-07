@@ -13,7 +13,7 @@ ticketHistoryRoutes.get(
 )
 
 ticketHistoryRoutes.get(
-  "/id",
+  "/:id",
   verifyUserAuthenticated(["client"]),
   ticketHistoryController.show
 )
